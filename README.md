@@ -7,7 +7,7 @@ go run main.go --dirPath data --promptCol E --completionCol F --startRow 2
 ```
 
 ```shell
-export OPENAI_API_KEY="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"
+export OPENAI_API_KEY="sk-xxxx"
 
 openai tools fine_tunes.prepare_data -f json.txt
 openai api fine_tunes.create -t json_prepared.jsonl
