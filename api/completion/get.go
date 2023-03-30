@@ -32,16 +32,6 @@ func Get(ctx *gin.Context) {
 	api.OK(ctx, answer, 1)
 }
 
-// prompt
-// 生成对话的示例提示语句，格式如下：
-// demo_q:
-// 使用以下段落来回答问题，如果段落内容不相关就返回未查到相关信息："成人头疼，流鼻涕是感冒还是过敏？"
-// 1. 普通感冒：您会出现喉咙发痒或喉咙痛，流鼻涕，流清澈的稀鼻涕（液体），有时轻度发热。
-// 2. 常年过敏：症状包括鼻塞或流鼻涕，鼻、口或喉咙发痒，眼睛流泪、发红、发痒、肿胀，打喷嚏。
-// demo_a:
-// 成人出现头痛和流鼻涕的症状，可能是由于普通感冒或常年过敏引起的。如果病人出现咽喉痛和咳嗽，感冒的可能性比较大；而如果出现口、喉咙发痒、眼睛肿胀等症状，常年过敏的可能性比较大。
-// system:
-// 你是一个医院问诊机器人
 func prompt(question string, answers []*Answer) (ret []openai.ChatCompletionMessage) {
 	system := "你是hu5ky智能助手"
 	q := "使用以下段落来回答问题，如果段落内容不相关就返回未查到相关信息：\""
@@ -72,12 +62,6 @@ type queryResp struct {
 	Tags   []string `json:"tags"`
 }
 
-// Query
-// 执行逻辑：
-// 首先使用openai的Embedding API将输入的文本转换为向量
-// 然后使用Qdrant的search API进行搜索，搜索结果中包含了向量和payload
-// payload中包含了title和text，title是疾病的标题，text是摘要
-// 最后使用openai的ChatCompletion API进行对话生成
 func query(ctx *gin.Context, text string) (ret *queryResp, err error) {
 	var (
 		collectionName = config.SysCache.DB.QdRant.CollectionName
