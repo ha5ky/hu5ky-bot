@@ -7,5 +7,6 @@
 package cmd
 
 var (
-	mode string
+	mode     string
+	logLevel string
 )

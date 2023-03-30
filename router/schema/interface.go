@@ -7,10 +7,10 @@
 package schema
 
 import (
-	"github.com/ka5ky/hu5ky-bot/pkg/config"
+	"github.com/ha5ky/hu5ky-bot/pkg/config"
 	"sync"
 
-	"github.com/ka5ky/hu5ky-bot/router/middleware/cors"
+	"github.com/ha5ky/hu5ky-bot/router/middleware/cors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -49,6 +49,6 @@ func (sb *SchemeBuilder) Register() *gin.RouterGroup {
 }
 
 func Registry() *gin.Engine {
-	gin.SetMode(config.PhdaliosCache.ServerConfig.Mode)
+	gin.SetMode(config.SysCache.ServerConfig.Mode)
 	return r
 }

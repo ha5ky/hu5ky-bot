@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hu5ky-bot
+  namespace: hu5ky-bot
+data:
+  hu5kyBotOpenAPIConfig: |-

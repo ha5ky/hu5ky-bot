@@ -19,5 +19,5 @@ openai api completions.create -m curie:ft-personal-2023-03-26-07-52-31 -p <YOUR_
 ## build
 
 ```shell
-go build -ldflags "-X 'github.com/ka5ky/hu5ky-bot/pkg/config.GitCommit=`git log --pretty=format:%H -1`'"
+go build -ldflags "-X 'github.com/ka5ky/hu5ky-bot/pkg/config.GitCommit=`git logger --pretty=format:%H -1`'"
 ```

@@ -6,7 +6,7 @@
 
 package main
 
-import "hu5ky-bot/cmd"
+import "github.com/ha5ky/hu5ky-bot/cmd"
 
 func main() {
 	cmd.Execute()
