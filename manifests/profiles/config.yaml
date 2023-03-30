@@ -1,0 +1,28 @@
+comm:
+  colorationKey: x-coloration-tag
+httpConfig:
+  port: 8788
+  readTimeout: 190
+  writeTimeout: 190
+  maxHeaderBytes: 1
+serverConfig:
+  logLevel: debug
+  mode: debug
+  storage: ./data
+gpt:
+  openaiApiKey: "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"
+db:
+  qdRant:
+    collectionName: data_collection
+    host: 127.0.0.1
+    port: 6334
+  mysql:
+    user: root
+    pwd: "123456"
+    host: localhost
+    port: "3306"
+    dbName: bot
+    logLevel: info # silent; error; warn; info;
+    charset: utf8mb4
+    parseTime: "True"
+    loc: Local
