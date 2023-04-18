@@ -24,6 +24,7 @@ var (
 func init() {
 	r = gin.Default()
 	r.Use(cors.Cors())
+	r.MaxMultipartMemory = config.SysCache.HttpConfig.MaxMultipartMemory << 20
 	apiGroup = r.Group(config.Project)
 }
 

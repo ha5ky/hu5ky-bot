@@ -17,11 +17,21 @@ func (c *Controller) FileModel(m *File) *File {
 	return m
 }
 
+type FileType string
+
+var (
+	PromptCompletion FileType = "PromptCompletion"
+	TXT              FileType = "txt"
+	Excel            FileType = "excel"
+)
+
 type File struct {
 	controller *gorm.DB
 	gorm.Model
 	Name string
 	Path string
+	Hash string
+	Type FileType
 }
 
 func init() {
@@ -43,18 +53,16 @@ type FileQuery struct {
 	PreLoad   bool
 	ID        *uint
 	IDs       *[]uint
-	Owners    []string
-
-	ReviewClauseType *string
-	Role             *string
-	ReviewClause     *string
-	ReviewClauseEn   *string
-	SerialNumber     *string
-	DRNode           *string
-	OrderByNo        bool
+	Hash      *string
 }
 
 func (c *File) Condition(q *FileQuery) *gorm.DB {
+	if q.ID != nil {
+		c.controller = c.controller.Where("id = ?", *q.ID)
+	}
+	if q.Hash != nil {
+		c.controller = c.controller.Where("hash = ?", *q.Hash)
+	}
 	return c.controller
 }
 

@@ -28,10 +28,11 @@ var (
 
 type SysConfig struct {
 	HttpConfig struct {
-		Port           uint16 `yaml:"port"`
-		ReadTimeout    int    `yaml:"readTimeout"`
-		WriteTimeout   int    `yaml:"writeTimeout"`
-		MaxHeaderBytes int    `yaml:"maxHeaderBytes"`
+		Port               uint16 `yaml:"port"`
+		ReadTimeout        int    `yaml:"readTimeout"`
+		WriteTimeout       int    `yaml:"writeTimeout"`
+		MaxHeaderBytes     int    `yaml:"maxHeaderBytes"`
+		MaxMultipartMemory int64  `yaml:"maxMultipartMemory"`
 	} `yaml:"httpConfig"`
 
 	ServerConfig struct {
@@ -46,9 +47,8 @@ type SysConfig struct {
 
 	DB struct {
 		QdRant struct {
-			CollectionName string `yaml:"collectionName"`
-			Host           string `yaml:"host"`
-			Port           string `yaml:"port"`
+			Host string `yaml:"host"`
+			Port string `yaml:"port"`
 		} `yaml:"qdRant"`
 
 		Mysql struct {

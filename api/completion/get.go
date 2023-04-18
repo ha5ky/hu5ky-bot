@@ -7,13 +7,14 @@
 package completion
 
 import (
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/ha5ky/hu5ky-bot/api"
+	"github.com/ha5ky/hu5ky-bot/model"
 	"github.com/ha5ky/hu5ky-bot/pkg/config"
 	boterrors "github.com/ha5ky/hu5ky-bot/pkg/errors"
 	"github.com/ha5ky/hu5ky-bot/pkg/logger"
 	"github.com/ha5ky/hu5ky-bot/pkg/qdrant"
+	"github.com/ha5ky/hu5ky-bot/pkg/util"
 	pb "github.com/qdrant/go-client/qdrant"
 	"github.com/sashabaranov/go-openai"
 	"net/http"
@@ -22,13 +23,38 @@ import (
 
 func Get(ctx *gin.Context) {
 	search := ctx.Query("search")
-	answer, err := query(ctx, search)
-	if err != nil {
+	collectionIdStr := ctx.Query("collection_id")
+	var (
+		c = model.NewController()
+
+		collectionId int
+
+		collection model.Collection
+		answer     *queryResp
+
+		err error
+	)
+	c.Begin()
+	if collectionId, err = strconv.Atoi(collectionIdStr); err != nil {
 		logger.Fatalf("to embeddings error: %v", err)
+		c.Rollback()
 		api.ErrorRender(ctx, http.StatusBadRequest, err, boterrors.InvalidParams)
 		return
 	}
-
+	uintCollectionId := uint(collectionId)
+	if collection, err = c.CollectionModel(&model.Collection{}).Get(&model.CollectionQuery{ID: &uintCollectionId}); err != nil {
+		logger.Error(err)
+		c.Rollback()
+		api.ErrorRender(ctx, http.StatusBadRequest, err, boterrors.InvalidParams)
+		return
+	}
+	if answer, err = query(ctx, search, collection.Name); err != nil {
+		logger.Error(err)
+		c.Rollback()
+		api.ErrorRender(ctx, http.StatusBadRequest, err, boterrors.InvalidParams)
+		return
+	}
+	c.Commit()
 	api.OK(ctx, answer, 1)
 }
 
@@ -62,9 +88,8 @@ type queryResp struct {
 	Tags   []string `json:"tags"`
 }
 
-func query(ctx *gin.Context, text string) (ret *queryResp, err error) {
+func query(ctx *gin.Context, text, collectionName string) (ret *queryResp, err error) {
 	var (
-		collectionName = config.SysCache.DB.QdRant.CollectionName
 		embedding      []float32
 		searchResp     = new(pb.SearchResponse)
 		completionResp openai.ChatCompletionResponse
@@ -74,35 +99,20 @@ func query(ctx *gin.Context, text string) (ret *queryResp, err error) {
 	ret = new(queryResp)
 	qdrantClientSet, err := qdrant.NewClientSet(ctx)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
+		api.ErrorRender(ctx, http.StatusBadRequest, err, boterrors.InvalidParams)
 		return
 	}
 	defer qdrantClientSet.ConnClose()
-	//m := &qdrant.DataModel{
-	//	Prompt:     "",
-	//	Completion: text,
-	//}
+	m := &qdrant.DataModel{
+		Prompt:     "",
+		Completion: text,
+	}
 	openaiClient := openai.NewClient(config.SysCache.GPT.OpenaiAPIKey)
-	//if _, _, embedding, err = qdrant.ToEmbeddings(ctx, openaiClient, m); err != nil {
-	//	logger.Fatalf("to embeddings error: %v", err)
-	//	return
-	//}
-	var (
-		resp openai.EmbeddingResponse
-	)
-	if resp, err = openaiClient.CreateEmbeddings(ctx, openai.EmbeddingRequest{
-		Input: []string{text},
-		Model: openai.AdaEmbeddingV2,
-	}); err != nil {
-		logger.Fatalf("create embeddings error: %v", err)
+	if _, _, embedding, err = qdrant.ToEmbeddings(ctx, openaiClient, m); err != nil {
+		logger.Fatalf("to embeddings error: %v", err)
 		return
 	}
-
-	if len(resp.Data) == 0 {
-		err = errors.New("data error")
-		return
-	}
-	embedding = resp.Data[0].Embedding
 
 	hnswEf := uint64(128)
 	exact := false
@@ -110,7 +120,7 @@ func query(ctx *gin.Context, text string) (ret *queryResp, err error) {
 	if searchResp, err = qdrantClientSet.PointsClient.Search(ctx, &pb.SearchPoints{
 		CollectionName: collectionName,
 		Vector:         embedding,
-		Limit:          3,
+		Limit:          20,
 		WithPayload: &pb.WithPayloadSelector{SelectorOptions: &pb.WithPayloadSelector_Enable{
 			Enable: true,
 		}},
@@ -119,7 +129,8 @@ func query(ctx *gin.Context, text string) (ret *queryResp, err error) {
 			Exact:  &exact,
 		},
 	}); err != nil {
-		logger.Errorf("to embeddings error: %v", err)
+		logger.Error(err)
+		api.ErrorRender(ctx, http.StatusBadRequest, err, boterrors.InvalidParams)
 		return
 	}
 
@@ -130,13 +141,15 @@ func query(ctx *gin.Context, text string) (ret *queryResp, err error) {
 		})
 	}
 	promptMessage := prompt(text, answers)
+	util.DumpPretty(promptMessage)
 
 	if completionResp, err = openaiClient.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model:       openai.GPT3Dot5Turbo,
 		Messages:    promptMessage,
 		Temperature: 0.7,
 	}); err != nil {
-		logger.Errorf("create completion error: %v", err)
+		logger.Error(err)
+		api.ErrorRender(ctx, http.StatusBadRequest, err, boterrors.InvalidParams)
 		return
 	}
 	answer := ""

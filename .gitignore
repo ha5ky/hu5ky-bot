@@ -1,3 +1,4 @@
 ./data
-
+./manifests/profiles/config.yaml
+./tools
 private

@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/fs"
 	"os"
 	"path"
 	"strconv"
@@ -43,33 +42,34 @@ func main() {
 		models = make([]model, 0)
 	)
 
-	fileSystem := os.DirFS(*dirPath)
+	ef, err := excelize.OpenFile(path.Join(*dirPath, "辽宁22年.xlsx"))
+	if err != nil {
+		panic(err)
+	}
 
-	if err = fs.WalkDir(fileSystem, ".", func(fileName string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
-		ef, err := excelize.OpenFile(path.Join(*dirPath, fileName))
-		if err != nil {
-			panic(err)
-		}
-
-		for _, sheet := range ef.GetSheetList() {
-			rows, _ := ef.GetRows(sheet)
-			rowCount := len(rows)
-			fmt.Println(rowCount)
-			for i := *startRow; i <= rowCount; i++ {
-				prompt, _ := ef.GetCellValue(sheet, getCellKey(*promptCol, i))
-				completion, _ := ef.GetCellValue(sheet, getCellKey(*completionCol, i))
-				models = append(models, model{
-					Prompt:     prompt,
-					Completion: completion,
-				})
+	for _, sheet := range ef.GetSheetList() {
+		rows, _ := ef.GetRows(sheet)
+		rowCount := len(rows)
+		rows = nil
+		fmt.Println(rowCount)
+		for i := *startRow; i <= rowCount; i++ {
+			prompt := ""
+			completion := sprintf(
+				getCellValue(ef, sheet, "B", i),
+				getCellValue(ef, sheet, "A", i),
+				"2022",
+				getCellValue(ef, sheet, "F", i),
+				getCellValue(ef, sheet, "D", i),
+				getCellValue(ef, sheet, "C", i),
+				getCellValue(ef, sheet, "E", i),
+			)
+			m := model{
+				Prompt:     prompt,
+				Completion: completion,
 			}
+
+			models = append(models, m)
 		}
-		return nil
-	}); err != nil {
-		fmt.Println(err)
 	}
 	file, _ := os.OpenFile("./json.txt", os.O_WRONLY|os.O_CREATE, 0666)
 	defer file.Close()
@@ -79,6 +79,18 @@ func main() {
 		write.WriteString(string(jsonByte) + "\n")
 	}
 	write.Flush()
+}
+
+func getCellValue(ef *excelize.File, sheet, key string, row int) string {
+	ret, _ := ef.GetCellValue(sheet, getCellKey(key, row))
+	return ret
+}
+
+func sprintf(collage, no, year, kind, major, majorNum, score string) string {
+	return fmt.Sprintf(
+		"招生院校%s的院校编号是%s，在%s年，%s科类，招生专业是%s（专业编号%s）的最低投档分是%s",
+		collage, no, year, kind, major, majorNum, score,
+	)
 }
 
 func getKey(index int) string {
@@ -91,8 +103,15 @@ func getKey(index int) string {
 	return colCode + string(key+int32(index)%26)
 }
 
-func getCellKey(x string, y int) string {
-	return strings.ToUpper(x) + strconv.Itoa(y)
+func getCellKey(x any, y int) (ret string) {
+
+	switch x.(type) {
+	case string:
+		ret = strings.ToUpper(x.(string)) + strconv.Itoa(y)
+	case int:
+		ret = getKey(x.(int))
+	}
+	return
 }
 
 func DumpPretty(input interface{}) {

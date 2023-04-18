@@ -18,8 +18,12 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/ha5ky/hu5ky-bot/api/chat"
+	_ "github.com/ha5ky/hu5ky-bot/api/collection"
 	_ "github.com/ha5ky/hu5ky-bot/api/completion"
 	_ "github.com/ha5ky/hu5ky-bot/api/embedding"
+	_ "github.com/ha5ky/hu5ky-bot/api/file"
+	_ "github.com/ha5ky/hu5ky-bot/api/image"
 )
 
 var (
